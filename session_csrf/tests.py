@@ -336,6 +336,15 @@ class TestAnonAlways(django.test.TestCase):
         response = self.client.get('/')
         self.assertEqual(len(response._request.csrf_token), 32)
 
+    def test_massive_anon_cookie(self):
+        # if the key + PREFIX + setting prefix is greater than 250
+        # memcache will cry and you get a warning if you use LocMemCache
+        junk = 'x' * 300
+        with mock.patch('warnings.warn') as warner:
+            response = self.client.get('/', HTTP_COOKIE='anoncsrf=%s' % junk)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(warner.call_count, 0)
+
 
 class ClientHandler(django.test.client.ClientHandler):
     """
